@@ -14,6 +14,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="habits">
+        <Icon sf={{ default: "leaf", selected: "leaf.fill" }} />
+        <Label>Habits</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="log">
         <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
         <Label>Log</Label>
@@ -62,6 +66,15 @@ function ClassicTabLayout() {
           title: "Home",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="habits"
+        options={{
+          title: "Habits",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="leaf" size={size} color={color} />
           ),
         }}
       />

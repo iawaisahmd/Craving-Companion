@@ -49,11 +49,40 @@ export interface RescueSession {
   resisted: boolean;
 }
 
+export interface Habit {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  isCustom: boolean;
+  createdAt: string;
+}
+
+export interface HabitCompletion {
+  habitId: string;
+  date: string; // YYYY-MM-DD
+  completedAt: string;
+}
+
+export const SUGGESTED_HABITS: Omit<Habit, "isCustom" | "createdAt">[] = [
+  { id: "breathing", name: "Deep breathing", description: "3 minutes of slow, calm breaths", icon: "leaf", color: "#5FCB8B" },
+  { id: "water", name: "Drink water", description: "A full glass of cold water", icon: "water", color: "#2D8CFF" },
+  { id: "walk", name: "Short walk", description: "10 minutes outside, fresh air", icon: "footsteps", color: "#FF751F" },
+  { id: "meditation", name: "Meditate", description: "5 minutes of quiet stillness", icon: "moon", color: "#9B80FF" },
+  { id: "journal", name: "Journal", description: "Write 3 things you're grateful for", icon: "pencil", color: "#C8A96B" },
+  { id: "stretch", name: "Stretch", description: "5 minutes of gentle stretching", icon: "body", color: "#F08A5D" },
+  { id: "fruit", name: "Eat fruit or veg", description: "One healthy snack instead", icon: "nutrition", color: "#5FCB8B" },
+  { id: "connect", name: "Call someone", description: "Check in with a friend or family", icon: "call", color: "#2D8CFF" },
+];
+
 interface AppState {
   profile: UserProfile | null;
   isOnboarded: boolean;
   triggerLog: TriggerEntry[];
   rescueSessions: RescueSession[];
+  habits: Habit[];
+  habitCompletions: HabitCompletion[];
   loading: boolean;
 }
 
@@ -66,15 +95,27 @@ interface AppContextValue extends AppState {
   getDaysSmokeeFree: () => number;
   getMoneySaved: () => number;
   getCravingsResisted: () => number;
+  addHabit: (habit: Omit<Habit, "id" | "isCustom" | "createdAt">) => Promise<void>;
+  removeHabit: (habitId: string) => Promise<void>;
+  toggleHabitCompletion: (habitId: string) => Promise<void>;
+  isHabitCompletedToday: (habitId: string) => boolean;
+  getHabitStreak: (habitId: string) => number;
+  getTodayCompletionCount: () => number;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 const KEYS = {
-  PROFILE: "@craveaway_profile",
-  TRIGGERS: "@craveaway_triggers",
-  RESCUE: "@craveaway_rescue",
+  PROFILE: "@urge90_profile",
+  TRIGGERS: "@urge90_triggers",
+  RESCUE: "@urge90_rescue",
+  HABITS: "@urge90_habits",
+  HABIT_COMPLETIONS: "@urge90_habit_completions",
 };
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>({
@@ -82,6 +123,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isOnboarded: false,
     triggerLog: [],
     rescueSessions: [],
+    habits: [],
+    habitCompletions: [],
     loading: true,
   });
 
@@ -91,19 +134,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [profileRaw, triggersRaw, rescueRaw] = await Promise.all([
+      const [profileRaw, triggersRaw, rescueRaw, habitsRaw, completionsRaw] = await Promise.all([
         AsyncStorage.getItem(KEYS.PROFILE),
         AsyncStorage.getItem(KEYS.TRIGGERS),
         AsyncStorage.getItem(KEYS.RESCUE),
+        AsyncStorage.getItem(KEYS.HABITS),
+        AsyncStorage.getItem(KEYS.HABIT_COMPLETIONS),
       ]);
       const profile = profileRaw ? JSON.parse(profileRaw) : null;
       const triggerLog = triggersRaw ? JSON.parse(triggersRaw) : [];
       const rescueSessions = rescueRaw ? JSON.parse(rescueRaw) : [];
+      const habits = habitsRaw ? JSON.parse(habitsRaw) : [];
+      const habitCompletions = completionsRaw ? JSON.parse(completionsRaw) : [];
       setState({
         profile,
         isOnboarded: !!profile,
         triggerLog,
         rescueSessions,
+        habits,
+        habitCompletions,
         loading: false,
       });
     } catch {
@@ -157,17 +206,108 @@ export function AppProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const addHabit = useCallback(
+    async (habit: Omit<Habit, "id" | "isCustom" | "createdAt">) => {
+      const newHabit: Habit = {
+        ...habit,
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        isCustom: true,
+        createdAt: new Date().toISOString(),
+      };
+      setState((s) => {
+        const updated = [...s.habits, newHabit];
+        AsyncStorage.setItem(KEYS.HABITS, JSON.stringify(updated));
+        return { ...s, habits: updated };
+      });
+    },
+    []
+  );
+
+  const removeHabit = useCallback(async (habitId: string) => {
+    setState((s) => {
+      const updated = s.habits.filter((h) => h.id !== habitId);
+      AsyncStorage.setItem(KEYS.HABITS, JSON.stringify(updated));
+      return { ...s, habits: updated };
+    });
+  }, []);
+
+  const toggleHabitCompletion = useCallback(async (habitId: string) => {
+    const today = todayStr();
+    setState((s) => {
+      const alreadyDone = s.habitCompletions.some(
+        (c) => c.habitId === habitId && c.date === today
+      );
+      let updated: HabitCompletion[];
+      if (alreadyDone) {
+        updated = s.habitCompletions.filter(
+          (c) => !(c.habitId === habitId && c.date === today)
+        );
+      } else {
+        updated = [
+          ...s.habitCompletions,
+          { habitId, date: today, completedAt: new Date().toISOString() },
+        ];
+      }
+      AsyncStorage.setItem(KEYS.HABIT_COMPLETIONS, JSON.stringify(updated));
+      return { ...s, habitCompletions: updated };
+    });
+  }, []);
+
+  const isHabitCompletedToday = useCallback(
+    (habitId: string) => {
+      const today = todayStr();
+      return state.habitCompletions.some(
+        (c) => c.habitId === habitId && c.date === today
+      );
+    },
+    [state.habitCompletions]
+  );
+
+  const getHabitStreak = useCallback(
+    (habitId: string) => {
+      const dates = state.habitCompletions
+        .filter((c) => c.habitId === habitId)
+        .map((c) => c.date)
+        .sort()
+        .reverse();
+      if (!dates.length) return 0;
+      let streak = 0;
+      const today = new Date();
+      for (let i = 0; i < 365; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dStr = d.toISOString().split("T")[0];
+        if (dates.includes(dStr)) {
+          streak++;
+        } else if (i > 0) {
+          break;
+        }
+      }
+      return streak;
+    },
+    [state.habitCompletions]
+  );
+
+  const getTodayCompletionCount = useCallback(() => {
+    const today = todayStr();
+    return state.habitCompletions.filter((c) => c.date === today).length;
+  }, [state.habitCompletions]);
+
   const resetData = useCallback(async () => {
     await Promise.all([
       AsyncStorage.removeItem(KEYS.PROFILE),
       AsyncStorage.removeItem(KEYS.TRIGGERS),
       AsyncStorage.removeItem(KEYS.RESCUE),
+      AsyncStorage.removeItem(KEYS.HABITS),
+      AsyncStorage.removeItem(KEYS.HABIT_COMPLETIONS),
     ]);
     setState({
       profile: null,
       isOnboarded: false,
       triggerLog: [],
       rescueSessions: [],
+      habits: [],
+      habitCompletions: [],
       loading: false,
     });
   }, []);
@@ -202,6 +342,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         getDaysSmokeeFree,
         getMoneySaved,
         getCravingsResisted,
+        addHabit,
+        removeHabit,
+        toggleHabitCompletion,
+        isHabitCompletedToday,
+        getHabitStreak,
+        getTodayCompletionCount,
       }}
     >
       {children}
