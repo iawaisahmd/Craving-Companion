@@ -169,7 +169,7 @@ export default function Onboarding() {
                 <TextInput
                   style={styles.input}
                   value={dailySpend}
-                  onChangeText={setDailySpend}
+                  onChangeText={(v) => setDailySpend(v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"))}
                   placeholder="0.00"
                   placeholderTextColor={C.textDim}
                   keyboardType="decimal-pad"
