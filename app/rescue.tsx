@@ -563,6 +563,7 @@ const styles = StyleSheet.create({
   },
   interventionPicker: {
     gap: 14,
+    marginBottom: 20,
   },
   sectionLabel: {
     fontFamily: "Inter_500Medium",
