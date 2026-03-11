@@ -46,6 +46,12 @@ export type TriggerType =
   | "habit"
   | "other";
 
+export interface EmergencyContact {
+  id: string;
+  name: string;
+  phone: string;
+}
+
 export interface UserProfile {
   // Legacy single type kept for compatibility
   quitType: BadHabitType;
@@ -55,6 +61,7 @@ export interface UserProfile {
   biggestTrigger: TriggerType;
   contactName: string;
   contactPhone: string;
+  contacts: EmergencyContact[];
   quitReason: string;
   quitDate: string;
   hapticsEnabled: boolean;
@@ -184,6 +191,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Migrate old profiles that don't have badHabits
       if (profile && !profile.badHabits) {
         profile.badHabits = [profile.quitType || "cigarettes"];
+      }
+      // Migrate old contactName/contactPhone to contacts array
+      if (profile && !profile.contacts) {
+        profile.contacts = [];
+        if (profile.contactName) {
+          profile.contacts.push({
+            id: "primary",
+            name: profile.contactName,
+            phone: profile.contactPhone || "",
+          });
+        }
       }
       setState({
         profile,

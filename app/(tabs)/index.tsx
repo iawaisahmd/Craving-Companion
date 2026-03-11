@@ -183,20 +183,24 @@ export default function HomeScreen() {
           </View>
         ) : null}
 
-        {profile?.contactName ? (
-          <Pressable style={styles.sosCard} onPress={() => router.push("/rescue")}>
-            <View style={styles.sosLeft}>
-              <View style={styles.sosIconWrap}>
-                <Ionicons name="flash" size={20} color={C.warning} />
+        {(() => {
+          const contacts = profile?.contacts || [];
+          const firstName = contacts[0]?.name || profile?.contactName;
+          return firstName ? (
+            <Pressable style={styles.sosCard} onPress={() => router.push("/rescue")}>
+              <View style={styles.sosLeft}>
+                <View style={styles.sosIconWrap}>
+                  <Ionicons name="flash" size={20} color={C.warning} />
+                </View>
+                <View>
+                  <Text style={styles.sosTitle}>Quick SOS</Text>
+                  <Text style={styles.sosDesc}>Start rescue · text {firstName}</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.sosTitle}>Quick SOS</Text>
-                <Text style={styles.sosDesc}>Start rescue · text {profile.contactName}</Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
-          </Pressable>
-        ) : null}
+              <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
+            </Pressable>
+          ) : null;
+        })()}
       </ScrollView>
     </View>
   );

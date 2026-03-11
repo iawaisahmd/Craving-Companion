@@ -1,20 +1,14 @@
 import React, { useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  TextInput,
-  Switch,
-  Alert,
-  Platform,
+  View, Text, StyleSheet, ScrollView, Pressable,
+  TextInput, Switch, Alert, Platform, Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useThemeColors, useTheme } from "@/context/ThemeContext";
-import { useApp } from "@/context/AppContext";
+import { useApp, EmergencyContact } from "@/context/AppContext";
 import { router } from "expo-router";
 import { ColorTheme } from "@/constants/colors";
 
@@ -45,6 +39,24 @@ function makeStyles(C: ColorTheme) {
     themeIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${C.primary}18`, alignItems: "center", justifyContent: "center" },
     themeLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 15, color: C.text },
     themeValue: { fontFamily: "Inter_400Regular", fontSize: 13, color: C.textMuted },
+    contactCard: { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: C.surface, padding: 16, borderRadius: 16, marginBottom: 2, borderWidth: 1, borderColor: C.border },
+    contactIconWrap: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${C.primary}18`, alignItems: "center", justifyContent: "center" },
+    contactContent: { flex: 1, gap: 2 },
+    contactName: { fontFamily: "Inter_500Medium", fontSize: 15, color: C.text },
+    contactPhone: { fontFamily: "Inter_400Regular", fontSize: 13, color: C.textMuted },
+    contactRemoveBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: `${C.warning}15`, alignItems: "center", justifyContent: "center" },
+    addContactBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.surface, borderRadius: 16, paddingVertical: 14, borderWidth: 1.5, borderColor: `${C.primary}40`, borderStyle: "dashed" },
+    addContactBtnText: { fontFamily: "Inter_500Medium", fontSize: 15, color: C.primary },
+    modalContainer: { flex: 1, backgroundColor: C.background },
+    modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, paddingBottom: 24 },
+    modalTitle: { fontFamily: "Inter_700Bold", fontSize: 22, color: C.text },
+    modalClose: { width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface, alignItems: "center", justifyContent: "center" },
+    modalLabel: { fontFamily: "Inter_500Medium", fontSize: 13, color: C.textMuted, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 },
+    modalInput: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1.5, borderColor: C.border, paddingHorizontal: 18, paddingVertical: 14, fontFamily: "Inter_400Regular", fontSize: 16, color: C.text },
+    modalSaveBtn: { borderRadius: 20, overflow: "hidden" },
+    modalSaveBtnGradient: { paddingVertical: 18, alignItems: "center", justifyContent: "center" },
+    modalSaveBtnText: { fontFamily: "Inter_600SemiBold", fontSize: 17, color: C.onPrimary },
+    emptyContactText: { fontFamily: "Inter_400Regular", fontSize: 14, color: C.textDim, textAlign: "center", paddingVertical: 8 },
   });
 }
 
@@ -56,11 +68,7 @@ function SettingRow({
 }) {
   const styles = useMemo(() => makeStyles(C), [C]);
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.settingRow, pressed && onPress && { opacity: 0.7 }]}
-      disabled={!onPress && !rightElement}
-    >
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.settingRow, pressed && onPress && { opacity: 0.7 }]} disabled={!onPress && !rightElement}>
       <View style={[styles.settingIconWrap, destructive && { backgroundColor: `${C.warning}18` }]}>
         <Ionicons name={icon as any} size={20} color={destructive ? C.warning : C.primary} />
       </View>
@@ -73,6 +81,56 @@ function SettingRow({
   );
 }
 
+function AddContactModal({ visible, onClose, onSave }: {
+  visible: boolean; onClose: () => void;
+  onSave: (name: string, phone: string) => void;
+}) {
+  const C = useThemeColors();
+  const styles = useMemo(() => makeStyles(C), [C]);
+  const insets = useSafeAreaInsets();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave(name.trim(), phone.trim());
+    setName("");
+    setPhone("");
+    onClose();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="formSheet" onRequestClose={onClose}>
+      <View style={[styles.modalContainer, { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 + (Platform.OS === "web" ? 34 : 0) }]}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Add contact</Text>
+          <Pressable onPress={onClose} style={styles.modalClose}>
+            <Ionicons name="close" size={22} color={C.textMuted} />
+          </Pressable>
+        </View>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 20, paddingHorizontal: 24, paddingBottom: 24 }}>
+          <View>
+            <Text style={styles.modalLabel}>Name</Text>
+            <TextInput style={styles.modalInput} value={name} onChangeText={setName} placeholder="Their name" placeholderTextColor={C.textDim} autoFocus returnKeyType="next" />
+          </View>
+          <View>
+            <Text style={styles.modalLabel}>Phone number</Text>
+            <TextInput style={styles.modalInput} value={phone} onChangeText={setPhone} placeholder="+1 555 000 0000" placeholderTextColor={C.textDim} keyboardType="phone-pad" returnKeyType="done" />
+          </View>
+        </ScrollView>
+        <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+          <Pressable onPress={handleSave} disabled={!name.trim()} style={({ pressed }) => [styles.modalSaveBtn, pressed && { opacity: 0.85 }, !name.trim() && { opacity: 0.4 }]}>
+            <LinearGradient colors={[C.gradStart, C.gradEnd]} style={styles.modalSaveBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <Text style={styles.modalSaveBtnText}>Add contact</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function SettingsScreen() {
   const C = useThemeColors();
   const { isDark, toggleTheme } = useTheme();
@@ -81,6 +139,7 @@ export default function SettingsScreen() {
   const { profile, updateProfile, resetData } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
   const [tempVal, setTempVal] = useState("");
+  const [showAddContact, setShowAddContact] = useState(false);
 
   const startEdit = (key: string, current: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -98,6 +157,29 @@ export default function SettingsScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const handleAddContact = (name: string, phone: string) => {
+    if (!profile) return;
+    const newContact: EmergencyContact = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      name,
+      phone,
+    };
+    const contacts = [...(profile.contacts || []), newContact];
+    updateProfile({ contacts });
+  };
+
+  const handleRemoveContact = (id: string, name: string) => {
+    Alert.alert(`Remove "${name}"?`, "This contact will be removed from your emergency list.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Remove", style: "destructive", onPress: () => {
+        if (!profile) return;
+        const contacts = (profile.contacts || []).filter((c) => c.id !== id);
+        updateProfile({ contacts });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      }},
+    ]);
+  };
+
   const handleReset = () => {
     Alert.alert("Reset all data", "This will delete your progress, trigger log, and profile. This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
@@ -113,19 +195,16 @@ export default function SettingsScreen() {
 
   if (!profile) return null;
 
+  const contacts = profile.contacts || [];
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop, paddingHorizontal: 24, paddingBottom: Platform.OS === "web" ? 34 + 84 : 100, gap: 24 }}
-    >
+    <ScrollView style={styles.container} contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingTop, paddingHorizontal: 24, paddingBottom: Platform.OS === "web" ? 34 + 84 : 100, gap: 24 }}>
       <Text style={styles.screenTitle}>Settings</Text>
 
       {/* Your quit */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your quit</Text>
-
         {editing === "quitReason" ? (
           <View style={styles.editCard}>
             <TextInput style={styles.editInput} value={tempVal} onChangeText={setTempVal} multiline autoFocus placeholder="Why you quit..." placeholderTextColor={C.textDim} />
@@ -137,7 +216,6 @@ export default function SettingsScreen() {
         ) : (
           <SettingRow C={C} icon="heart" label="Why you quit" value={profile.quitReason || "Not set"} onPress={() => startEdit("quitReason", profile.quitReason)} />
         )}
-
         {editing === "dailySpend" ? (
           <View style={styles.editCard}>
             <View style={styles.inputRow}>
@@ -154,31 +232,30 @@ export default function SettingsScreen() {
         )}
       </View>
 
-      {/* Emergency contact */}
+      {/* Emergency contacts */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Emergency contact</Text>
-        {editing === "contactName" ? (
-          <View style={styles.editCard}>
-            <TextInput style={styles.editInput} value={tempVal} onChangeText={setTempVal} autoFocus placeholder="Their name" placeholderTextColor={C.textDim} />
-            <View style={styles.editActions}>
-              <Pressable onPress={() => setEditing(null)} style={styles.cancelBtn}><Text style={styles.cancelBtnText}>Cancel</Text></Pressable>
-              <Pressable onPress={() => saveEdit("contactName")} style={styles.saveBtn}><Text style={styles.saveBtnText}>Save</Text></Pressable>
-            </View>
-          </View>
-        ) : (
-          <SettingRow C={C} icon="person" label="Name" value={profile.contactName || "Not set"} onPress={() => startEdit("contactName", profile.contactName)} />
+        <Text style={styles.sectionTitle}>Emergency contacts</Text>
+        {contacts.length === 0 && (
+          <Text style={styles.emptyContactText}>No contacts yet. Add someone you trust.</Text>
         )}
-        {editing === "contactPhone" ? (
-          <View style={styles.editCard}>
-            <TextInput style={styles.editInput} value={tempVal} onChangeText={setTempVal} autoFocus keyboardType="phone-pad" placeholder="Phone number" placeholderTextColor={C.textDim} />
-            <View style={styles.editActions}>
-              <Pressable onPress={() => setEditing(null)} style={styles.cancelBtn}><Text style={styles.cancelBtnText}>Cancel</Text></Pressable>
-              <Pressable onPress={() => saveEdit("contactPhone")} style={styles.saveBtn}><Text style={styles.saveBtnText}>Save</Text></Pressable>
+        {contacts.map((contact) => (
+          <View key={contact.id} style={styles.contactCard}>
+            <View style={styles.contactIconWrap}>
+              <Ionicons name="person" size={20} color={C.primary} />
             </View>
+            <View style={styles.contactContent}>
+              <Text style={styles.contactName}>{contact.name}</Text>
+              {contact.phone ? <Text style={styles.contactPhone}>{contact.phone}</Text> : null}
+            </View>
+            <Pressable onPress={() => handleRemoveContact(contact.id, contact.name)} style={styles.contactRemoveBtn}>
+              <Ionicons name="close" size={16} color={C.warning} />
+            </Pressable>
           </View>
-        ) : (
-          <SettingRow C={C} icon="call" label="Phone" value={profile.contactPhone || "Not set"} onPress={() => startEdit("contactPhone", profile.contactPhone)} />
-        )}
+        ))}
+        <Pressable onPress={() => { setShowAddContact(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} style={({ pressed }) => [styles.addContactBtn, pressed && { opacity: 0.75 }]}>
+          <Ionicons name="person-add" size={18} color={C.primary} />
+          <Text style={styles.addContactBtnText}>Add contact</Text>
+        </Pressable>
       </View>
 
       {/* Appearance */}
@@ -194,10 +271,7 @@ export default function SettingsScreen() {
           </View>
           <Switch
             value={isDark}
-            onValueChange={() => {
-              toggleTheme();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            }}
+            onValueChange={() => { toggleTheme(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
             trackColor={{ false: C.surfaceElevated, true: C.primary }}
             thumbColor={isDark ? C.background : "#FFFFFF"}
           />
@@ -214,10 +288,7 @@ export default function SettingsScreen() {
           rightElement={
             <Switch
               value={profile.hapticsEnabled}
-              onValueChange={(v) => {
-                updateProfile({ hapticsEnabled: v });
-                if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              }}
+              onValueChange={(v) => { updateProfile({ hapticsEnabled: v }); if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
               trackColor={{ false: C.surfaceElevated, true: C.primary }}
               thumbColor={profile.hapticsEnabled ? C.background : "#FFFFFF"}
             />
@@ -240,6 +311,8 @@ export default function SettingsScreen() {
             : "Not set"}
         </Text>
       </View>
+
+      <AddContactModal visible={showAddContact} onClose={() => setShowAddContact(false)} onSave={handleAddContact} />
     </ScrollView>
   );
 }

@@ -57,9 +57,10 @@ function makeStyles(C: ColorTheme) {
     timerDisplay: { fontFamily: "Inter_700Bold", fontSize: 64, color: C.text, textAlign: "center", letterSpacing: -2 },
     timerHint: { fontFamily: "Inter_400Regular", fontSize: 15, color: C.textMuted, textAlign: "center", lineHeight: 22, paddingHorizontal: 16, marginBottom: 8 },
     rescueContent: { flex: 1, alignItems: "center", justifyContent: "center" },
-    breathCircleOuter: { alignItems: "center", justifyContent: "center", gap: 24 },
+    breathCircleOuter: { alignItems: "center", justifyContent: "center", gap: 32 },
+    breathCircleContainer: { width: 260, height: 260, alignItems: "center", justifyContent: "center" },
     breathCircle: { width: 180, height: 180, borderRadius: 90, overflow: "hidden" },
-    breathPhaseText: { fontFamily: "Inter_600SemiBold", fontSize: 22, color: C.text, textAlign: "center" },
+    breathPhaseText: { fontFamily: "Inter_600SemiBold", fontSize: 22, color: C.text, textAlign: "center", marginTop: 8 },
     breathLabel: { fontFamily: "Inter_400Regular", fontSize: 15, color: C.textMuted, textAlign: "center", minHeight: 24, marginBottom: 8 },
     distractCard: { backgroundColor: C.surface, borderRadius: 24, padding: 32, alignItems: "center", gap: 20, borderWidth: 1, borderColor: `${C.accent}30`, maxWidth: 320 },
     distractText: { fontFamily: "Inter_500Medium", fontSize: 22, color: C.text, textAlign: "center", lineHeight: 32 },
@@ -110,9 +111,11 @@ function BreathingCircle({ phase, C, styles }: {
   const animStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: opacity.value }));
   return (
     <View style={styles.breathCircleOuter}>
-      <Animated.View style={[styles.breathCircle, animStyle]}>
-        <LinearGradient colors={[C.gradStart, C.gradEnd]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
-      </Animated.View>
+      <View style={styles.breathCircleContainer}>
+        <Animated.View style={[styles.breathCircle, animStyle]}>
+          <LinearGradient colors={[C.gradStart, C.gradEnd]} style={StyleSheet.absoluteFill} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} />
+        </Animated.View>
+      </View>
       <Text style={styles.breathPhaseText}>
         {phase === "inhale" ? "Breathe in" : phase === "hold" ? "Hold" : "Breathe out"}
       </Text>
@@ -168,9 +171,13 @@ export default function RescueScreen() {
   const timerBarStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   const handleTextContact = () => {
-    if (!profile?.contactPhone) { Alert.alert("No contact set", "Add an emergency contact in Settings."); return; }
-    const msg = encodeURIComponent(`Hey ${profile.contactName} — I'm having a craving moment. Just need someone to know. I'm okay.`);
-    Linking.openURL(Platform.OS === "ios" ? `sms:${profile.contactPhone}&body=${msg}` : `sms:${profile.contactPhone}?body=${msg}`);
+    const contacts = profile?.contacts || [];
+    const primaryContact = contacts[0];
+    const phone = primaryContact?.phone || profile?.contactPhone;
+    const name = primaryContact?.name || profile?.contactName;
+    if (!phone) { Alert.alert("No contact set", "Add an emergency contact in Settings."); return; }
+    const msg = encodeURIComponent(`Hey ${name} — I'm having a craving moment. Just need someone to know. I'm okay.`);
+    Linking.openURL(Platform.OS === "ios" ? `sms:${phone}&body=${msg}` : `sms:${phone}?body=${msg}`);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
@@ -235,16 +242,20 @@ export default function RescueScreen() {
               <Text style={styles.distractText}>{distraction}</Text>
             </View>
           )}
-          {intervention === "text" && (
-            <View style={styles.textCard}>
-              <Text style={styles.textCardTitle}>{profile?.contactName ? `Text ${profile.contactName}` : "Text someone you trust"}</Text>
-              <Text style={styles.textCardBody}>Let them know you're having a moment. You don't have to explain.</Text>
-              <Pressable onPress={handleTextContact} style={styles.textBtn}>
-                <Ionicons name="chatbubble" size={20} color="#FFFFFF" />
-                <Text style={styles.textBtnLabel}>{profile?.contactName ? `Message ${profile.contactName}` : "Open Messages"}</Text>
-              </Pressable>
-            </View>
-          )}
+          {intervention === "text" && (() => {
+            const contacts = profile?.contacts || [];
+            const contactName = contacts[0]?.name || profile?.contactName;
+            return (
+              <View style={styles.textCard}>
+                <Text style={styles.textCardTitle}>{contactName ? `Text ${contactName}` : "Text someone you trust"}</Text>
+                <Text style={styles.textCardBody}>Let them know you're having a moment. You don't have to explain.</Text>
+                <Pressable onPress={handleTextContact} style={styles.textBtn}>
+                  <Ionicons name="chatbubble" size={20} color="#FFFFFF" />
+                  <Text style={styles.textBtnLabel}>{contactName ? `Message ${contactName}` : "Open Messages"}</Text>
+                </Pressable>
+              </View>
+            );
+          })()}
         </View>
         <Text style={styles.breathLabel}>
           {intervention === "breathe" && (breathPhase === "inhale" ? "4 seconds in" : breathPhase === "hold" ? "Hold it" : "4 seconds out")}
