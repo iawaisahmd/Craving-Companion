@@ -14,25 +14,30 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AppProvider } from "@/context/AppContext";
+import { ThemeProvider, useTheme } from "@/context/ThemeContext";
 import { StatusBar } from "expo-status-bar";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
+  const { isDark } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="onboarding" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="rescue"
-        options={{ presentation: "fullScreenModal", animation: "fade" }}
-      />
-      <Stack.Screen
-        name="log-trigger"
-        options={{ presentation: "formSheet", animation: "slide_from_bottom" }}
-      />
-    </Stack>
+    <>
+      <StatusBar style={isDark ? "light" : "dark"} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="rescue"
+          options={{ presentation: "fullScreenModal", animation: "fade" }}
+        />
+        <Stack.Screen
+          name="log-trigger"
+          options={{ presentation: "formSheet", animation: "slide_from_bottom" }}
+        />
+      </Stack>
+    </>
   );
 }
 
@@ -55,14 +60,15 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AppProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <StatusBar style="light" />
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </AppProvider>
+        <ThemeProvider>
+          <AppProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </AppProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

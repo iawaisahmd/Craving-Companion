@@ -1,9 +1,10 @@
 import { useApp } from "@/context/AppContext";
 import { Redirect } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
-import { C } from "@/constants/colors";
+import { useThemeColors } from "@/context/ThemeContext";
 
 export default function Index() {
+  const C = useThemeColors();
   const { loading, isOnboarded } = useApp();
 
   if (loading) {
@@ -14,9 +15,6 @@ export default function Index() {
     );
   }
 
-  if (!isOnboarded) {
-    return <Redirect href="/onboarding" />;
-  }
-
+  if (!isOnboarded) return <Redirect href="/onboarding" />;
   return <Redirect href="/(tabs)" />;
 }
