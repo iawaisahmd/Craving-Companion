@@ -105,7 +105,7 @@ function BreathingCircle({ phase }: { phase: "inhale" | "hold" | "exhale" }) {
     <View style={styles.breathCircleOuter}>
       <Animated.View style={[styles.breathCircle, animStyle]}>
         <LinearGradient
-          colors={["#9B80FF", "#6E56CF"]}
+          colors={["#FF9048", "#FF751F"]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -295,7 +295,7 @@ export default function RescueScreen() {
           ]}
         >
           <LinearGradient
-            colors={["#7B66D9", "#6E56CF"]}
+            colors={["#FF9048", "#FF751F"]}
             style={styles.startBtnGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -473,7 +473,7 @@ export default function RescueScreen() {
         ]}
       >
         <LinearGradient
-          colors={resisted ? ["#5FCB8B", "#3eaa6f"] : ["#7B66D9", "#6E56CF"]}
+          colors={resisted ? ["#5FCB8B", "#3eaa6f"] : ["#FF9048", "#FF751F"]}
           style={styles.startBtnGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}

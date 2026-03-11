@@ -192,7 +192,7 @@ export default function LogTriggerScreen() {
           ]}
         >
           <LinearGradient
-            colors={["#7B66D9", "#6E56CF"]}
+            colors={["#FF9048", "#FF751F"]}
             style={styles.saveBtnGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}

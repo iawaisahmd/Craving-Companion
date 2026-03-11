@@ -301,7 +301,7 @@ export default function Onboarding() {
           ]}
         >
           <LinearGradient
-            colors={["#7B66D9", "#6E56CF"]}
+            colors={["#FF9048", "#FF751F"]}
             style={styles.ctaGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
