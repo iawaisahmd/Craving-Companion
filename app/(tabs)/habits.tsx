@@ -31,7 +31,7 @@ const HABIT_ICONS = [
 ];
 
 const HABIT_COLORS = [
-  "#5FCB8B", "#2D8CFF", "#FF751F", "#9B80FF",
+  "#5FCB8B", "#2D8CFF", "#2F6F68", "#9B80FF",
   "#C8A96B", "#F08A5D", "#FF6B9D", "#00C9B1",
 ];
 
@@ -194,7 +194,7 @@ function CustomHabitModal({
         <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
           <Pressable onPress={handleAdd} disabled={!name.trim()}
             style={({ pressed }) => [styles.addBtn, pressed && { opacity: 0.85 }, !name.trim() && { opacity: 0.4 }]}>
-            <LinearGradient colors={["#FF9048", "#FF751F"]} style={styles.addBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <LinearGradient colors={["#3D8A82", "#2F6F68"]} style={styles.addBtnGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
               <Text style={styles.addBtnText}>Add habit</Text>
             </LinearGradient>
           </Pressable>
@@ -262,7 +262,7 @@ export default function HabitsScreen() {
         {habits.length > 0 && (
           <View style={styles.progressCard}>
             <LinearGradient
-              colors={["rgba(255,117,31,0.08)", "transparent"]}
+              colors={["rgba(47,111,104,0.08)", "transparent"]}
               style={StyleSheet.absoluteFill}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}

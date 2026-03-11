@@ -157,7 +157,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === "web" ? insets.top + 67 : 0 }]}>
       <LinearGradient
-        colors={["rgba(110,86,207,0.08)", "transparent"]}
+        colors={["rgba(47,111,104,0.08)", "transparent"]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.4 }}

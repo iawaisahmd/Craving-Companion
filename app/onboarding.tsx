@@ -93,7 +93,7 @@ export default function Onboarding() {
   return (
     <View style={[styles.container, { paddingTop }]}>
       <LinearGradient
-        colors={["rgba(255,117,31,0.1)", "transparent"]}
+        colors={["rgba(47,111,104,0.10)", "transparent"]}
         style={StyleSheet.absoluteFill}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 0.5 }}
@@ -136,20 +136,20 @@ export default function Onboarding() {
                       onPress={() => toggleBadHabit(h.value)}
                       style={[
                         styles.badHabitCard,
-                        selected && { borderColor: h.color, backgroundColor: `${h.color}15` },
+                        selected && { borderColor: h.color, backgroundColor: `${h.color}12` },
                       ]}
                     >
-                      <View style={[styles.badHabitIconWrap, { backgroundColor: `${h.color}20` }]}>
-                        <Ionicons name={h.icon as any} size={22} color={selected ? h.color : C.textMuted} />
-                      </View>
-                      <Text style={[styles.badHabitLabel, selected && { color: C.text }]}>
-                        {h.label}
-                      </Text>
                       {selected && (
                         <View style={[styles.checkBadge, { backgroundColor: h.color }]}>
                           <Ionicons name="checkmark" size={10} color="#fff" />
                         </View>
                       )}
+                      <View style={[styles.badHabitIconWrap, { backgroundColor: `${h.color}18` }]}>
+                        <Ionicons name={h.icon as any} size={22} color={selected ? h.color : C.textMuted} />
+                      </View>
+                      <Text style={[styles.badHabitLabel, selected && { color: C.text }]} numberOfLines={2}>
+                        {h.label}
+                      </Text>
                     </Pressable>
                   );
                 })}
@@ -322,7 +322,7 @@ export default function Onboarding() {
           ]}
         >
           <LinearGradient
-            colors={["#FF9048", "#FF751F"]}
+            colors={["#3D8A82", "#2F6F68"]}
             style={styles.ctaGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -359,21 +359,26 @@ const styles = StyleSheet.create({
   subheading: { fontFamily: "Inter_400Regular", fontSize: 17, color: C.textMuted, lineHeight: 26, marginBottom: 28 },
   badHabitGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   badHabitCard: {
-    width: "47%",
+    width: "30%",
+    flexGrow: 1,
     backgroundColor: C.surface,
-    borderRadius: 20,
-    padding: 16,
-    flexDirection: "row",
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    flexDirection: "column",
     alignItems: "center",
-    gap: 10,
+    gap: 8,
     borderWidth: 1.5,
     borderColor: C.border,
     position: "relative",
   },
-  badHabitIconWrap: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center" },
-  badHabitLabel: { flex: 1, fontFamily: "Inter_500Medium", fontSize: 13, color: C.textMuted },
+  badHabitIconWrap: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
+  badHabitLabel: {
+    fontFamily: "Inter_500Medium", fontSize: 12, color: C.textMuted,
+    textAlign: "center", lineHeight: 16,
+  },
   checkBadge: {
-    position: "absolute", top: 8, right: 8,
+    position: "absolute", top: 6, right: 6,
     width: 18, height: 18, borderRadius: 9,
     alignItems: "center", justifyContent: "center",
   },
@@ -394,7 +399,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10, paddingHorizontal: 16,
     borderWidth: 1.5, borderColor: C.border,
   },
-  triggerChipActive: { borderColor: C.primary, backgroundColor: "rgba(255,117,31,0.12)" },
+  triggerChipActive: { borderColor: C.primary, backgroundColor: "rgba(47,111,104,0.12)" },
   triggerLabel: { fontFamily: "Inter_500Medium", fontSize: 14, color: C.textMuted },
   fieldInput: {
     backgroundColor: C.surface, borderRadius: 16, borderWidth: 1.5,

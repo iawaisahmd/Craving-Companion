@@ -105,7 +105,7 @@ function BreathingCircle({ phase }: { phase: "inhale" | "hold" | "exhale" }) {
     <View style={styles.breathCircleOuter}>
       <Animated.View style={[styles.breathCircle, animStyle]}>
         <LinearGradient
-          colors={["#FF9048", "#FF751F"]}
+          colors={["#3D8A82", "#2F6F68"]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -295,7 +295,7 @@ export default function RescueScreen() {
           ]}
         >
           <LinearGradient
-            colors={["#FF9048", "#FF751F"]}
+            colors={["#3D8A82", "#2F6F68"]}
             style={styles.startBtnGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -312,7 +312,7 @@ export default function RescueScreen() {
     return (
       <View style={[styles.container, { paddingTop, paddingBottom }]}>
         <LinearGradient
-          colors={["rgba(110,86,207,0.15)", "transparent"]}
+          colors={["rgba(47,111,104,0.12)", "transparent"]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.5 }}
@@ -473,7 +473,7 @@ export default function RescueScreen() {
         ]}
       >
         <LinearGradient
-          colors={resisted ? ["#5FCB8B", "#3eaa6f"] : ["#FF9048", "#FF751F"]}
+          colors={resisted ? ["#5FCB8B", "#3eaa6f"] : ["#3D8A82", "#2F6F68"]}
           style={styles.startBtnGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
   },
   interventionChipActive: {
     borderColor: C.primary,
-    backgroundColor: "rgba(110,86,207,0.12)",
+    backgroundColor: "rgba(47,111,104,0.12)",
   },
   interventionLabel: {
     fontFamily: "Inter_500Medium",

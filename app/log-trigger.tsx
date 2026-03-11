@@ -192,7 +192,7 @@ export default function LogTriggerScreen() {
           ]}
         >
           <LinearGradient
-            colors={["#FF9048", "#FF751F"]}
+            colors={["#3D8A82", "#2F6F68"]}
             style={styles.saveBtnGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   },
   triggerChipActive: {
     borderColor: C.primary,
-    backgroundColor: "rgba(110,86,207,0.12)",
+    backgroundColor: "rgba(47,111,104,0.12)",
   },
   triggerLabel: {
     fontFamily: "Inter_500Medium",
