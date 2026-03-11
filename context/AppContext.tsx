@@ -8,7 +8,34 @@ import React, {
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export type QuitType = "cigarettes" | "vaping";
+export type BadHabitType =
+  | "cigarettes"
+  | "vaping"
+  | "alcohol"
+  | "junk-food"
+  | "social-media"
+  | "gambling"
+  | "caffeine"
+  | "nail-biting"
+  | "late-night-scrolling"
+  | "overeating"
+  | "procrastination"
+  | "other";
+
+export const BAD_HABITS: { value: BadHabitType; label: string; icon: string; color: string }[] = [
+  { value: "cigarettes",          label: "Cigarettes",         icon: "flame",            color: "#F08A5D" },
+  { value: "vaping",              label: "Vaping",             icon: "cloud",            color: "#98A2B3" },
+  { value: "alcohol",             label: "Alcohol",            icon: "wine",             color: "#C8A96B" },
+  { value: "junk-food",           label: "Junk food",          icon: "fast-food",        color: "#FF6B9D" },
+  { value: "social-media",        label: "Social media",       icon: "phone-portrait",   color: "#2D8CFF" },
+  { value: "gambling",            label: "Gambling",           icon: "cash",             color: "#5FCB8B" },
+  { value: "caffeine",            label: "Caffeine",           icon: "cafe",             color: "#9B80FF" },
+  { value: "nail-biting",         label: "Nail biting",        icon: "hand-left",        color: "#FF751F" },
+  { value: "late-night-scrolling",label: "Late-night screen",  icon: "moon",             color: "#6E56CF" },
+  { value: "overeating",          label: "Overeating",         icon: "nutrition",        color: "#00C9B1" },
+  { value: "procrastination",     label: "Procrastination",    icon: "time",             color: "#F08A5D" },
+  { value: "other",               label: "Something else",     icon: "ellipsis-horizontal", color: "#98A2B3" },
+];
 
 export type TriggerType =
   | "stress"
@@ -20,7 +47,10 @@ export type TriggerType =
   | "other";
 
 export interface UserProfile {
-  quitType: QuitType;
+  // Legacy single type kept for compatibility
+  quitType: BadHabitType;
+  // New: multi-select bad habits
+  badHabits: BadHabitType[];
   dailySpend: number;
   biggestTrigger: TriggerType;
   contactName: string;
@@ -66,14 +96,18 @@ export interface HabitCompletion {
 }
 
 export const SUGGESTED_HABITS: Omit<Habit, "isCustom" | "createdAt">[] = [
-  { id: "breathing", name: "Deep breathing", description: "3 minutes of slow, calm breaths", icon: "leaf", color: "#5FCB8B" },
-  { id: "water", name: "Drink water", description: "A full glass of cold water", icon: "water", color: "#2D8CFF" },
-  { id: "walk", name: "Short walk", description: "10 minutes outside, fresh air", icon: "footsteps", color: "#FF751F" },
-  { id: "meditation", name: "Meditate", description: "5 minutes of quiet stillness", icon: "moon", color: "#9B80FF" },
-  { id: "journal", name: "Journal", description: "Write 3 things you're grateful for", icon: "pencil", color: "#C8A96B" },
-  { id: "stretch", name: "Stretch", description: "5 minutes of gentle stretching", icon: "body", color: "#F08A5D" },
-  { id: "fruit", name: "Eat fruit or veg", description: "One healthy snack instead", icon: "nutrition", color: "#5FCB8B" },
-  { id: "connect", name: "Call someone", description: "Check in with a friend or family", icon: "call", color: "#2D8CFF" },
+  { id: "breathing",  name: "Deep breathing",   description: "3 minutes of slow, calm breaths",         icon: "leaf",        color: "#5FCB8B" },
+  { id: "water",      name: "Drink water",       description: "A full glass of cold water",               icon: "water",       color: "#2D8CFF" },
+  { id: "walk",       name: "Short walk",        description: "10 minutes outside, fresh air",            icon: "footsteps",   color: "#FF751F" },
+  { id: "meditation", name: "Meditate",          description: "5 minutes of quiet stillness",             icon: "moon",        color: "#9B80FF" },
+  { id: "journal",    name: "Journal",           description: "Write 3 things you're grateful for",       icon: "pencil",      color: "#C8A96B" },
+  { id: "stretch",    name: "Stretch",           description: "5 minutes of gentle stretching",           icon: "body",        color: "#F08A5D" },
+  { id: "fruit",      name: "Eat fruit or veg",  description: "One healthy snack instead",                icon: "nutrition",   color: "#5FCB8B" },
+  { id: "connect",    name: "Call someone",      description: "Check in with a friend or family",         icon: "call",        color: "#2D8CFF" },
+  { id: "exercise",   name: "Exercise",          description: "20 minutes of movement",                   icon: "barbell",     color: "#FF6B9D" },
+  { id: "read",       name: "Read",              description: "10 minutes of a book or article",          icon: "book",        color: "#9B80FF" },
+  { id: "sleep",      name: "Sleep on time",     description: "In bed by your target time",               icon: "bed",         color: "#6E56CF" },
+  { id: "cold-water", name: "Cold water splash", description: "Splash cold water on your face",           icon: "snow",        color: "#2D8CFF" },
 ];
 
 interface AppState {
@@ -101,6 +135,7 @@ interface AppContextValue extends AppState {
   isHabitCompletedToday: (habitId: string) => boolean;
   getHabitStreak: (habitId: string) => number;
   getTodayCompletionCount: () => number;
+  getWeeklyCompletions: (habitId: string) => boolean[];
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -117,6 +152,12 @@ function todayStr() {
   return new Date().toISOString().split("T")[0];
 }
 
+function dateStr(daysAgo: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split("T")[0];
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>({
     profile: null,
@@ -128,9 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loading: true,
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     try {
@@ -142,17 +181,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem(KEYS.HABIT_COMPLETIONS),
       ]);
       const profile = profileRaw ? JSON.parse(profileRaw) : null;
-      const triggerLog = triggersRaw ? JSON.parse(triggersRaw) : [];
-      const rescueSessions = rescueRaw ? JSON.parse(rescueRaw) : [];
-      const habits = habitsRaw ? JSON.parse(habitsRaw) : [];
-      const habitCompletions = completionsRaw ? JSON.parse(completionsRaw) : [];
+      // Migrate old profiles that don't have badHabits
+      if (profile && !profile.badHabits) {
+        profile.badHabits = [profile.quitType || "cigarettes"];
+      }
       setState({
         profile,
         isOnboarded: !!profile,
-        triggerLog,
-        rescueSessions,
-        habits,
-        habitCompletions,
+        triggerLog: triggersRaw ? JSON.parse(triggersRaw) : [],
+        rescueSessions: rescueRaw ? JSON.parse(rescueRaw) : [],
+        habits: habitsRaw ? JSON.parse(habitsRaw) : [],
+        habitCompletions: completionsRaw ? JSON.parse(completionsRaw) : [],
         loading: false,
       });
     } catch {
@@ -174,54 +213,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const addTriggerEntry = useCallback(
-    async (entry: Omit<TriggerEntry, "id" | "timestamp">) => {
-      const newEntry: TriggerEntry = {
-        ...entry,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        timestamp: new Date().toISOString(),
-      };
-      setState((s) => {
-        const updated = [newEntry, ...s.triggerLog];
-        AsyncStorage.setItem(KEYS.TRIGGERS, JSON.stringify(updated));
-        return { ...s, triggerLog: updated };
-      });
-    },
-    []
-  );
+  const addTriggerEntry = useCallback(async (entry: Omit<TriggerEntry, "id" | "timestamp">) => {
+    const newEntry: TriggerEntry = {
+      ...entry,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString(),
+    };
+    setState((s) => {
+      const updated = [newEntry, ...s.triggerLog];
+      AsyncStorage.setItem(KEYS.TRIGGERS, JSON.stringify(updated));
+      return { ...s, triggerLog: updated };
+    });
+  }, []);
 
-  const addRescueSession = useCallback(
-    async (session: Omit<RescueSession, "id" | "timestamp">) => {
-      const newSession: RescueSession = {
-        ...session,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        timestamp: new Date().toISOString(),
-      };
-      setState((s) => {
-        const updated = [newSession, ...s.rescueSessions];
-        AsyncStorage.setItem(KEYS.RESCUE, JSON.stringify(updated));
-        return { ...s, rescueSessions: updated };
-      });
-    },
-    []
-  );
+  const addRescueSession = useCallback(async (session: Omit<RescueSession, "id" | "timestamp">) => {
+    const newSession: RescueSession = {
+      ...session,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: new Date().toISOString(),
+    };
+    setState((s) => {
+      const updated = [newSession, ...s.rescueSessions];
+      AsyncStorage.setItem(KEYS.RESCUE, JSON.stringify(updated));
+      return { ...s, rescueSessions: updated };
+    });
+  }, []);
 
-  const addHabit = useCallback(
-    async (habit: Omit<Habit, "id" | "isCustom" | "createdAt">) => {
-      const newHabit: Habit = {
-        ...habit,
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        isCustom: true,
-        createdAt: new Date().toISOString(),
-      };
-      setState((s) => {
-        const updated = [...s.habits, newHabit];
-        AsyncStorage.setItem(KEYS.HABITS, JSON.stringify(updated));
-        return { ...s, habits: updated };
-      });
-    },
-    []
-  );
+  const addHabit = useCallback(async (habit: Omit<Habit, "id" | "isCustom" | "createdAt">) => {
+    const newHabit: Habit = {
+      ...habit,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      isCustom: true,
+      createdAt: new Date().toISOString(),
+    };
+    setState((s) => {
+      const updated = [...s.habits, newHabit];
+      AsyncStorage.setItem(KEYS.HABITS, JSON.stringify(updated));
+      return { ...s, habits: updated };
+    });
+  }, []);
 
   const removeHabit = useCallback(async (habitId: string) => {
     setState((s) => {
@@ -237,70 +267,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const alreadyDone = s.habitCompletions.some(
         (c) => c.habitId === habitId && c.date === today
       );
-      let updated: HabitCompletion[];
-      if (alreadyDone) {
-        updated = s.habitCompletions.filter(
-          (c) => !(c.habitId === habitId && c.date === today)
-        );
-      } else {
-        updated = [
-          ...s.habitCompletions,
-          { habitId, date: today, completedAt: new Date().toISOString() },
-        ];
-      }
+      const updated = alreadyDone
+        ? s.habitCompletions.filter((c) => !(c.habitId === habitId && c.date === today))
+        : [...s.habitCompletions, { habitId, date: today, completedAt: new Date().toISOString() }];
       AsyncStorage.setItem(KEYS.HABIT_COMPLETIONS, JSON.stringify(updated));
       return { ...s, habitCompletions: updated };
     });
   }, []);
 
-  const isHabitCompletedToday = useCallback(
-    (habitId: string) => {
-      const today = todayStr();
-      return state.habitCompletions.some(
-        (c) => c.habitId === habitId && c.date === today
-      );
-    },
-    [state.habitCompletions]
-  );
+  const isHabitCompletedToday = useCallback((habitId: string) => {
+    return state.habitCompletions.some(
+      (c) => c.habitId === habitId && c.date === todayStr()
+    );
+  }, [state.habitCompletions]);
 
-  const getHabitStreak = useCallback(
-    (habitId: string) => {
-      const dates = state.habitCompletions
-        .filter((c) => c.habitId === habitId)
-        .map((c) => c.date)
-        .sort()
-        .reverse();
-      if (!dates.length) return 0;
-      let streak = 0;
-      const today = new Date();
-      for (let i = 0; i < 365; i++) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
-        const dStr = d.toISOString().split("T")[0];
-        if (dates.includes(dStr)) {
-          streak++;
-        } else if (i > 0) {
-          break;
-        }
+  const getHabitStreak = useCallback((habitId: string) => {
+    const dates = state.habitCompletions
+      .filter((c) => c.habitId === habitId)
+      .map((c) => c.date);
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      if (dates.includes(dateStr(i))) {
+        streak++;
+      } else if (i > 0) {
+        break;
       }
-      return streak;
-    },
-    [state.habitCompletions]
-  );
+    }
+    return streak;
+  }, [state.habitCompletions]);
+
+  const getWeeklyCompletions = useCallback((habitId: string): boolean[] => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = dateStr(6 - i);
+      return state.habitCompletions.some((c) => c.habitId === habitId && c.date === d);
+    });
+  }, [state.habitCompletions]);
 
   const getTodayCompletionCount = useCallback(() => {
-    const today = todayStr();
-    return state.habitCompletions.filter((c) => c.date === today).length;
+    return state.habitCompletions.filter((c) => c.date === todayStr()).length;
   }, [state.habitCompletions]);
 
   const resetData = useCallback(async () => {
-    await Promise.all([
-      AsyncStorage.removeItem(KEYS.PROFILE),
-      AsyncStorage.removeItem(KEYS.TRIGGERS),
-      AsyncStorage.removeItem(KEYS.RESCUE),
-      AsyncStorage.removeItem(KEYS.HABITS),
-      AsyncStorage.removeItem(KEYS.HABIT_COMPLETIONS),
-    ]);
+    await Promise.all(Object.values(KEYS).map((k) => AsyncStorage.removeItem(k)));
     setState({
       profile: null,
       isOnboarded: false,
@@ -314,15 +322,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getDaysSmokeeFree = useCallback(() => {
     if (!state.profile?.quitDate) return 0;
-    const start = new Date(state.profile.quitDate).getTime();
-    const now = Date.now();
-    return Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    return Math.floor((Date.now() - new Date(state.profile.quitDate).getTime()) / 86400000);
   }, [state.profile]);
 
   const getMoneySaved = useCallback(() => {
     if (!state.profile) return 0;
-    const days = getDaysSmokeeFree();
-    return Math.round(days * state.profile.dailySpend * 100) / 100;
+    return Math.round(getDaysSmokeeFree() * state.profile.dailySpend * 100) / 100;
   }, [state.profile, getDaysSmokeeFree]);
 
   const getCravingsResisted = useCallback(() => {
@@ -331,25 +336,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.rescueSessions, state.triggerLog]);
 
   return (
-    <AppContext.Provider
-      value={{
-        ...state,
-        saveProfile,
-        updateProfile,
-        addTriggerEntry,
-        addRescueSession,
-        resetData,
-        getDaysSmokeeFree,
-        getMoneySaved,
-        getCravingsResisted,
-        addHabit,
-        removeHabit,
-        toggleHabitCompletion,
-        isHabitCompletedToday,
-        getHabitStreak,
-        getTodayCompletionCount,
-      }}
-    >
+    <AppContext.Provider value={{
+      ...state,
+      saveProfile, updateProfile, addTriggerEntry, addRescueSession, resetData,
+      getDaysSmokeeFree, getMoneySaved, getCravingsResisted,
+      addHabit, removeHabit, toggleHabitCompletion,
+      isHabitCompletedToday, getHabitStreak, getTodayCompletionCount, getWeeklyCompletions,
+    }}>
       {children}
     </AppContext.Provider>
   );
