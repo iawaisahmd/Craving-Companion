@@ -1,4 +1,4 @@
-# Urge90 - Craving Recovery Companion
+# Urge90 - Craving Recovery Companion 
 
 <p align="center">
   <img src="assets/images/icon.png" width="120" alt="Urge90 Icon">
